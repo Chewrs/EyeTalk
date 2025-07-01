@@ -7,9 +7,41 @@ from collections import defaultdict # For tracking object presence
 
 import requests
 import pygame
+from gtts import gTTS
+from pydub import AudioSegment
 
 
+
+# === SETTINGS ===
+MODEL_PATH = "yolo11n.pt"  #Replace with model path
+USB_CAMERA_INDEX = 0  #Index of the USB camera (0 for first camera)
+RESOLUTION = (640, 480)
+CONF_THRESHOLD = 0.5 
+
+
+# === INIT CODE ===
+#INIT YOLO
+model = YOLO(MODEL_PATH)
+labels = model.names
+
+
+pygame.mixer.init()
+
+# === INIT CAMERA ===
+cap = cv2.VideoCapture(USB_CAMERA_INDEX)
+cap.set(3, RESOLUTION[0])
+cap.set(4, RESOLUTION[1])
+
+# === TRACKING STATE ===
+object_presence = defaultdict(int)   # Tracks how long an object is present
+object_absence = defaultdict(int)    # Tracks how long an object is missing
+object_status: dict[int, bool] = {}   # int -> bool (e.g., "ID" -> True if active)
+
+# === DEFINE FUNCTION ===
+
+# Function to speak text using Google Translate TTS
 def speak(text, lang='th-TH'):
+    lang = 'th-TH' if lang == 'th' else lang  # Ensure lang is in correct format
     url = "https://translate.google.com/translate_tts"
     params = {
         "ie": "UTF-8",
@@ -35,6 +67,27 @@ def speak(text, lang='th-TH'):
     pygame.mixer.music.play()
     while pygame.mixer.music.get_busy():
         continue
+
+# Function to speak text using gTTS on device
+def speak(text, lang='th'): #on device speak tts
+    
+    start = time.time()
+    tts = gTTS(text=text, lang=lang, slow=False)
+    tts.save("temp.mp3")
+
+    gen_time = time.time() - start
+    
+    play_start = time.time()
+    pygame.mixer.music.load("temp.mp3")
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy():
+        continue
+
+    #calculate time taken to play
+    play_time = time.time() - play_start
+    total_time = time.time() - start
+
+    return gen_time, play_time, total_time 
 
 
 def get_label_thai(index): 
@@ -68,29 +121,8 @@ coco_labels_thai = {
     78: 'ไดร์เป่าผม', 79: 'แปรงสีฟัน'
 }
 
-# === SETTINGS ===
-MODEL_PATH = "yolo11n.pt"  #Replace with model path
-USB_CAMERA_INDEX = 0  #Index of the USB camera (0 for first camera)
-RESOLUTION = (640, 480)
-CONF_THRESHOLD = 0.3 
 
-
-# === INIT YOLO WITH TRACKING ===
-model = YOLO(MODEL_PATH)
-labels = model.names
-
-
-
-# === INIT CAMERA ===
-cap = cv2.VideoCapture(USB_CAMERA_INDEX)
-cap.set(3, RESOLUTION[0])
-cap.set(4, RESOLUTION[1])
-
-# === TRACKING STATE ===
-object_presence = defaultdict(int)   # Tracks how long an object is present
-object_absence = defaultdict(int)    # Tracks how long an object is missing
-object_status: dict[int, bool] = {}   # int -> bool (e.g., "ID" -> True if active)
-
+# === MAIN LOOP ===
 print("Running object tracker. Press Ctrl+C to stop.")
 print("info: model=", MODEL_PATH, "camera index=", USB_CAMERA_INDEX, "resolution=", RESOLUTION, "confidence threshold=", CONF_THRESHOLD)
 
@@ -154,7 +186,7 @@ while True:
             where_x = where_is_object(xavg)
 
             print(text)
-            speak(f"เห็น{thai_lable} อยู่ที่{where_x}",lang='th-TH')
+            speak(f"เห็น{thai_lable} อยู่ที่{where_x}",lang='th')
             object_status[obj_id] = True
 
 
@@ -167,7 +199,7 @@ while True:
             if object_absence[obj_id] == 2 and object_status.get(obj_id, False):
                 print(f"❌ ID {obj_id} left view ")
                 thai_lable = id_to_name.get(obj_id, "ไม่ทราบ")
-                speak(f"ไม่เห็น{thai_lable}แล้ว",lang='th-TH')
+                speak(f"ไม่เห็น{thai_lable}แล้ว",lang='th')
                 object_status[obj_id] = False
     print("Processing time:", time.time() - start_time)
 
