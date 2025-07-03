@@ -1,4 +1,4 @@
-EyeTalk v2 Prototype - README
+EyeTalk v2 Prototype
 =============================
 
 This is the second prototype of the EyeTalk project, designed to run on a Raspberry Pi 5 with Hailo-8 AI accelerator support.
@@ -30,4 +30,4 @@ Setup Instructions
 Notes
 -----
 - Make sure you have raspberry pi camera installed.
-- This version is optimized for Raspberry Pi 5 with the Hailo-8 accelerator.
+- This version is only work on Raspberry Pi 5 with the Hailo-8 accelerator.
