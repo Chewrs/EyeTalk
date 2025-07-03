@@ -5,11 +5,7 @@ import time
 from collections import defaultdict # For tracking object presence
 
 
-import requests
-import pygame
-from gtts import gTTS
-from pydub import AudioSegment
-
+from speak import TTS
 
 
 # === SETTINGS ===
@@ -24,8 +20,8 @@ CONF_THRESHOLD = 0.5
 model = YOLO(MODEL_PATH)
 labels = model.names
 
+tts = TTS(engine='offline', lang='th')  # Initialize TTS engine
 
-pygame.mixer.init()
 
 # === INIT CAMERA ===
 cap = cv2.VideoCapture(USB_CAMERA_INDEX)
@@ -38,57 +34,6 @@ object_absence = defaultdict(int)    # Tracks how long an object is missing
 object_status: dict[int, bool] = {}   # int -> bool (e.g., "ID" -> True if active)
 
 # === DEFINE FUNCTION ===
-
-# Function to speak text using Google Translate TTS
-def speak(text, lang='th-TH'):
-    lang = 'th-TH' if lang == 'th' else lang  # Ensure lang is in correct format
-    url = "https://translate.google.com/translate_tts"
-    params = {
-        "ie": "UTF-8",
-        "q": text,
-        "tl": lang,
-        "client": "tw-ob"
-    }
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-
-    response = requests.get(url, params=params, headers=headers)
-
-    with open("temp.mp3", "wb") as f:
-        f.write(response.content)
-
-    # Use pygame to play audio
-    pygame.mixer.init()
-    pygame.mixer.music.load("temp.mp3")
-
-    pygame.time.wait(500) #To not start playing before loading
-
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy():
-        continue
-
-# Function to speak text using gTTS on device
-def speak(text, lang='th'): #on device speak tts
-    
-    start = time.time()
-    tts = gTTS(text=text, lang=lang, slow=False)
-    tts.save("temp.mp3")
-
-    gen_time = time.time() - start
-    
-    play_start = time.time()
-    pygame.mixer.music.load("temp.mp3")
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy():
-        continue
-
-    #calculate time taken to play
-    play_time = time.time() - play_start
-    total_time = time.time() - start
-
-    return gen_time, play_time, total_time 
-
 
 def get_label_thai(index): 
     return coco_labels_thai.get(index, "ไม่ทราบ")
@@ -126,16 +71,17 @@ coco_labels_thai = {
 print("Running object tracker. Press Ctrl+C to stop.")
 print("info: model=", MODEL_PATH, "camera index=", USB_CAMERA_INDEX, "resolution=", RESOLUTION, "confidence threshold=", CONF_THRESHOLD)
 
-speak("เริ่มต้นระบบช่วยมอง", lang='th-TH')
+tts.speak("เริ่มต้นระบบช่วยมอง")
 
 id_to_name: dict[int, str] = {}  #Store object ID and Thai label 
 
 while True:
     start_time = time.time() #for whole processing time
 
-    ret, frame = cap.read()
+    ret, frame = cap.read() 
     if not ret:
         print("Camera error. Exiting.")
+        tts.speak("กล้องไม่ทำงาน")
         break
 
 
@@ -155,7 +101,7 @@ while True:
     seen_ids = set()
     
 
-    # Pjocess each detection
+    # Process each detection
     for i, det in enumerate(detections):
         coords = det.xyxy.cpu().numpy().squeeze().astype(int)
         xmin,ymin,xmax,ymax =coords
@@ -186,7 +132,7 @@ while True:
             where_x = where_is_object(xavg)
 
             print(text)
-            speak(f"เห็น{thai_lable} อยู่ที่{where_x}",lang='th')
+            tts.speak(f"เห็น{thai_lable} อยู่ที่{where_x}")
             object_status[obj_id] = True
 
 
@@ -199,7 +145,8 @@ while True:
             if object_absence[obj_id] == 2 and object_status.get(obj_id, False):
                 print(f"❌ ID {obj_id} left view ")
                 thai_lable = id_to_name.get(obj_id, "ไม่ทราบ")
-                speak(f"ไม่เห็น{thai_lable}แล้ว",lang='th')
+                tts.speak(f"ไม่เห็น{thai_lable}แล้ว")
+            
                 object_status[obj_id] = False
-    print("Processing time:", time.time() - start_time)
+    print(f"FPS:{1/(time.time() - start_time):.2f} ")
 
