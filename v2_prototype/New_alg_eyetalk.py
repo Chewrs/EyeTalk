@@ -49,7 +49,32 @@ class user_app_callback_class(app_callback_class):
             "fan": "พัดลม",
             "cup":"แก้วน้ำ"
         }
-        return eng_to_thai.get(word.lower(), "อื่นๆ") 
+        return eng_to_thai.get(word.lower(), word) 
+    def is_object_in_center(self, xmin, xmax, ymin, ymax,label, screen_width=1280, screen_height=720, margin=100):
+
+        #center of the screen
+        screen_center_x = screen_width // 2 
+        screen_center_y = screen_height // 2
+
+        # Calculate the center "area" of the screen with margin
+        central_screen_x = [(screen_center_x - margin), (screen_center_x + margin)]
+        central_screen_y = [(screen_center_y - margin), (screen_center_y + margin)]
+        #print(f"central_screen_x: {central_screen_x}, central_screen_y: {central_screen_y}")
+        # Calculate the center of the object
+        obj_center_x = (xmin + xmax) / 2
+        obj_center_y = (ymin + ymax) / 2
+
+        # Scale the object center to the screen size
+        obj_center_x_scaled = obj_center_x * screen_width
+        obj_center_y_scaled = obj_center_y * screen_height
+
+
+        if obj_center_x_scaled > central_screen_x[0] and obj_center_x_scaled < central_screen_x[1]:
+            if obj_center_y_scaled > central_screen_y[0] and obj_center_y_scaled < central_screen_y[1]:
+                return True
+        else:
+            return False
+
     
 def safe_speak(sp, text):
     threading.Thread(target=sp.speak, args=(text,), daemon=True).start()
@@ -74,6 +99,7 @@ def app_callback(pad, info, user_data):
 
     # Get the caps from the pad
     format, width, height = get_caps_from_pad(pad)
+    print(f"format: {format}, width: {width}, height: {height}")
 
     # If the user_data.use_frame is set to True, we can get the video frame from the buffer
     user_data.use_frame = False  # Set this to True to use the frame
@@ -98,25 +124,33 @@ def app_callback(pad, info, user_data):
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
 
+        # defind the bbox coordinates
+        xmin = float(bbox.xmin())
+        xmax = float(bbox.xmax())
+        ymin = float(bbox.ymin())
+        ymax = float(bbox.ymax())
 
-        seen_label.add(label)  # Add label to the "set" of seen labels
+        #Only count if object is in the center of the screen
+        if user_data.is_object_in_center(xmin, xmax, ymin, ymax, label):
 
-        # increment the detection count of each object label
-        if label not in user_data.object_save: #add new object to object_save: dict[label: couut]
-            user_data.object_save[label] = 1
-        elif label in user_data.object_save and user_data.object_save[label] < 20: #increase seen cout to existing object
-            if user_data.object_status.get(label, False) is False: # for new object.
-                if confidence > 0.6:  # harder for unverified object aka (status = False)
+
+            seen_label.add(label)  # Add label to the "set" of seen labels
+            # increment the detection count of each object label
+            if label not in user_data.object_save: #add new object to object_save: dict[label: couut]
+                user_data.object_save[label] = 1
+            elif label in user_data.object_save and user_data.object_save[label] < 20: #increase seen cout to existing object
+                if user_data.object_status.get(label, False) is False: # for new object.
+                    if confidence > 0.6:  # harder for unverified object aka (status = False)
+                        user_data.object_save[label] += 1
+                else: 
                     user_data.object_save[label] += 1
-            else: 
-                user_data.object_save[label] += 1
 
 
-        # Speak the new verified object
-        if user_data.object_save[label] >= 10 and user_data.object_status.get(label, False) is False:
-            user_data.object_status[label] = True  # Mark the object as active
-            print('Object detected:', label)
-            safe_speak(user_data.sp, f"เห็น {user_data.get_english_to_thai_dict(label)}")
+            # Speak the new verified object
+            if user_data.object_save[label] >= 5 and user_data.object_status.get(label, False) is False:
+                user_data.object_status[label] = True  # Mark the object as active
+                print('Object detected:', label)
+                safe_speak(user_data.sp, f" {user_data.get_english_to_thai_dict(label)}")
         
 
     # Delete activate object that is not detect
@@ -128,11 +162,12 @@ def app_callback(pad, info, user_data):
         if label not in seen_label:
             user_data.object_save[label] -= 1
 
+            # If the object has not been seen for a while, mark it as inactive (20 frames)
             if user_data.object_save[label] <= 1:
                 user_data.object_status[label] = False
 
                 print('Object not detected:', label)
-                safe_speak(user_data.sp, f"ไม่เห็น {user_data.get_english_to_thai_dict(label)}")
+                #safe_speak(user_data.sp, f"ไม่เห็น {user_data.get_english_to_thai_dict(label)}")
     
 
     #### Print the object status

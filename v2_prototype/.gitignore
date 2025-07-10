@@ -192,4 +192,6 @@ coverage/
 >>>>>>> 6fc8e4a (Initial drop (#3))
 
 #Che files
-temp.mp3
+speech.wav
+ci.yaml
+
