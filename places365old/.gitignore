@@ -1,0 +1,8 @@
+.DS_Store
+env/
+places_predict_light
+resnet18_places365.pth.tar
+
+# Optional:
+__pycache__/
+*.pyc

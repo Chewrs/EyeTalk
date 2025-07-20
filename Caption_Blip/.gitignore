@@ -1,0 +1,10 @@
+# Ignore large model and environment folders
+blip_model/
+env/
+
+# Ignore large individual files
+image.jpg
+
+# Optional: ignore Python cache files
+__pycache__/
+*.pyc

@@ -1,0 +1,1 @@
+pip install onnxruntime torchaudio numpy transformers sounddevice scipy requests pygame gTTS google-genai

@@ -7,8 +7,8 @@ import cv2
 import hailo
 
 from hailo_apps_infra.hailo_rpi_common import (
-    get_caps_from_pad,
-    get_numpy_from_buffer,
+    get_caps_from_pad, #not using
+    get_numpy_from_buffer, #not using
     app_callback_class,
 )
 from hailo_apps_infra.detection_pipeline import GStreamerDetectionApp
@@ -33,23 +33,90 @@ class user_app_callback_class(app_callback_class):
         self.object_status: dict[str, bool] = {}   # lable -> bool (e.g., "label" -> True if active)
         self.object_save: dict[str,int] = {}
 
-    def get_english_to_thai_dict(self,word):
-        eng_to_thai =  {
+    def get_english_to_thai_dict(self, word):
+        eng_to_thai = {
             "person": "คน",
-            "cell phone": "โทรศัพท์มือถือ",
-            "bottle": "ขวดน้ำ",
-            "remote": "รีโมท",
-            "book": "หนังสือ",
-            "bag": "กระเป๋า",
+            "bicycle": "จักรยาน",
             "car": "รถยนต์",
+            "motorcycle": "รถมอเตอร์ไซค์",
+            "airplane": "เครื่องบิน",
+            "bus": "รถบัส",
+            "train": "รถไฟ",
+            "truck": "รถบรรทุก",
+            "boat": "เรือ",
+            "traffic light": "สัญญาณไฟจราจร",
+            "fire hydrant": "หัวดับเพลิง",
+            "stop sign": "ป้ายหยุด",
+            "parking meter": "มิเตอร์ที่จอดรถ",
+            "bench": "ม้านั่ง",
+            "bird": "นก",
+            "cat": "แมว",
+            "dog": "สุนัข",
+            "horse": "ม้า",
+            "sheep": "แกะ",
+            "cow": "วัว",
+            "elephant": "ช้าง",
+            "bear": "หมี",
+            "zebra": "ม้าลาย",
+            "giraffe": "ยีราฟ",
+            "backpack": "กระเป๋าเป้",
+            "umbrella": "ร่ม",
+            "handbag": "กระเป๋าถือ",
+            "tie": "เนคไท",
+            "suitcase": "กระเป๋าเดินทาง",
+            "frisbee": "จานร่อน",
+            "skis": "สกี",
+            "snowboard": "สโนว์บอร์ด",
+            "sports ball": "ลูกบอลกีฬา",
+            "kite": "ว่าว",
+            "baseball bat": "ไม้เบสบอล",
+            "baseball glove": "ถุงมือเบสบอล",
+            "skateboard": "สเก็ตบอร์ด",
+            "surfboard": "กระดานโต้คลื่น",
+            "tennis racket": "ไม้เทนนิส",
+            "bottle": "ขวด",
+            "wine glass": "แก้วไวน์",
+            "cup": "แก้วน้ำ",
+            "fork": "ส้อม",
+            "knife": "มีด",
+            "spoon": "ช้อน",
+            "bowl": "ชาม",
+            "banana": "กล้วย",
+            "apple": "แอปเปิล",
+            "sandwich": "แซนด์วิช",
+            "orange": "ส้ม",
+            "broccoli": "บร็อคโคลี",
+            "carrot": "แครอท",
+            "hot dog": "ฮอตดอก",
+            "pizza": "พิซซ่า",
+            "donut": "โดนัท",
+            "cake": "เค้ก",
             "chair": "เก้าอี้",
-            "table": "โต๊ะ",
-            "pen": "ปากกา",
-            "latop": "คอมพิวเตอร์",
-            "fan": "พัดลม",
-            "cup":"แก้วน้ำ"
+            "couch": "โซฟา",
+            "potted plant": "ต้นไม้กระถาง",
+            "bed": "เตียง",
+            "dining table": "โต๊ะอาหาร",
+            "toilet": "โถส้วม",
+            "tv": "โทรทัศน์",
+            "laptop": "คอมพิวเตอร์พกพา",
+            "mouse": "เมาส์",
+            "remote": "รีโมท",
+            "keyboard": "แป้นพิมพ์",
+            "cell phone": "โทรศัพท์มือถือ",
+            "microwave": "ไมโครเวฟ",
+            "oven": "เตาอบ",
+            "toaster": "เครื่องปิ้งขนมปัง",
+            "sink": "อ่างล้างมือ",
+            "refrigerator": "ตู้เย็น",
+            "book": "หนังสือ",
+            "clock": "นาฬิกา",
+            "vase": "แจกัน",
+            "scissors": "กรรไกร",
+            "teddy bear": "ตุ๊กตาหมี",
+            "hair drier": "ไดร์เป่าผม",
+            "toothbrush": "แปรงสีฟัน"
         }
-        return eng_to_thai.get(word.lower(), word) 
+        return eng_to_thai.get(word.lower(), word)
     def is_object_in_center(self, xmin, xmax, ymin, ymax,label, screen_width=1280, screen_height=720, margin=100):
 
         #center of the screen
@@ -75,7 +142,7 @@ class user_app_callback_class(app_callback_class):
         else:
             return False
 
-    
+
 def safe_speak(sp, text):
     threading.Thread(target=sp.speak, args=(text,), daemon=True).start()
 
@@ -83,6 +150,7 @@ def safe_speak(sp, text):
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 
+safe_speak(user_app_callback_class().sp,"เริ่มต้นการทำงาน")
 # This is the callback function that will be called when data is available from the pipeline
 def app_callback(pad, info, user_data):
     start = time.time()  # Start time for performance measurement
@@ -99,7 +167,7 @@ def app_callback(pad, info, user_data):
 
     # Get the caps from the pad
     format, width, height = get_caps_from_pad(pad)
-    print(f"format: {format}, width: {width}, height: {height}")
+
 
     # If the user_data.use_frame is set to True, we can get the video frame from the buffer
     user_data.use_frame = False  # Set this to True to use the frame
@@ -142,6 +210,8 @@ def app_callback(pad, info, user_data):
                 if user_data.object_status.get(label, False) is False: # for new object.
                     if confidence > 0.6:  # harder for unverified object aka (status = False)
                         user_data.object_save[label] += 1
+                        print(f"detected {label} {user_data.object_save[label]} times")
+
                 else: 
                     user_data.object_save[label] += 1
 
@@ -183,3 +253,6 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
+
+
+

@@ -9,7 +9,7 @@ from speak import TTS
 
 
 # === SETTINGS ===
-MODEL_PATH = "yolo11n.pt"  #Replace with model path
+MODEL_PATH = "best-2.pt"  #Replace with model path
 USB_CAMERA_INDEX = 0  #Index of the USB camera (0 for first camera)
 RESOLUTION = (640, 480)
 CONF_THRESHOLD = 0.5 
@@ -19,7 +19,7 @@ CONF_THRESHOLD = 0.5
 #INIT YOLO
 model = YOLO(MODEL_PATH)
 labels = model.names
-
+print(labels)
 tts = TTS(engine='offline', lang='th')  # Initialize TTS engine
 
 

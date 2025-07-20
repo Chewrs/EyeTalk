@@ -1,0 +1,16 @@
+# Virtual environment
+env/
+
+# Model files
+*.onnx
+
+# Cache and temp files
+__pycache__/
+*.pyc
+*.log
+
+# Media files (optional)
+*.mp3
+*.wav
+*.jpg
+Images/

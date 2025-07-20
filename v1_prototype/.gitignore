@@ -13,7 +13,11 @@ __pycache__/
 .env
 
 #other
-temp.mp3
+*.mp3
 my_logging.py
 other.txt
 test
+
+#model file
+*.pt
+*.onnx
