@@ -1,5 +1,5 @@
 import requests
-import pygame
+#import pygame
 import time
 from gtts import gTTS
 import threading
@@ -9,7 +9,7 @@ import subprocess
 # --- Base TTS class ---
 class TTS:
     def __init__(self, engine='offline', lang='th'):
-        pygame.mixer.init()
+        #pygame.mixer.init()
         self.engine = engine
         self.lang = lang
 
@@ -38,12 +38,13 @@ class TTS:
         tts.save(file_path)
 
     #play music with pygame
+    '''
     def _pygame_play(self, file_path):
         pygame.mixer.music.load(file_path)
         pygame.time.wait(500)
         pygame.mixer.music.play()
         while pygame.mixer.music.get_busy():
-            continue
+            continue'''
     
     #play music with ffplay via subprocess(terminal)
     def _subprocess_play(self, file_path,speed):
