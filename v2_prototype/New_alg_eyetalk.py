@@ -15,6 +15,8 @@ from hailo_apps_infra.detection_pipeline import GStreamerDetectionApp
 
 
 from speak import QueuedTTS # for text-to-speech
+import Name_Eng_to_thai # for Coco items translation
+
 from collections import defaultdict  # For tracking object presence
 import time
 import threading
@@ -33,90 +35,7 @@ class user_app_callback_class(app_callback_class):
         self.object_status: dict[str, bool] = {}   # lable -> bool (e.g., "label" -> True if active)
         self.object_save: dict[str,int] = {}
 
-    def get_english_to_thai_dict(self, word):
-        eng_to_thai = {
-            "person": "คน",
-            "bicycle": "จักรยาน",
-            "car": "รถยนต์",
-            "motorcycle": "รถมอเตอร์ไซค์",
-            "airplane": "เครื่องบิน",
-            "bus": "รถบัส",
-            "train": "รถไฟ",
-            "truck": "รถบรรทุก",
-            "boat": "เรือ",
-            "traffic light": "สัญญาณไฟจราจร",
-            "fire hydrant": "หัวดับเพลิง",
-            "stop sign": "ป้ายหยุด",
-            "parking meter": "มิเตอร์ที่จอดรถ",
-            "bench": "ม้านั่ง",
-            "bird": "นก",
-            "cat": "แมว",
-            "dog": "สุนัข",
-            "horse": "ม้า",
-            "sheep": "แกะ",
-            "cow": "วัว",
-            "elephant": "ช้าง",
-            "bear": "หมี",
-            "zebra": "ม้าลาย",
-            "giraffe": "ยีราฟ",
-            "backpack": "กระเป๋าเป้",
-            "umbrella": "ร่ม",
-            "handbag": "กระเป๋าถือ",
-            "tie": "เนคไท",
-            "suitcase": "กระเป๋าเดินทาง",
-            "frisbee": "จานร่อน",
-            "skis": "สกี",
-            "snowboard": "สโนว์บอร์ด",
-            "sports ball": "ลูกบอลกีฬา",
-            "kite": "ว่าว",
-            "baseball bat": "ไม้เบสบอล",
-            "baseball glove": "ถุงมือเบสบอล",
-            "skateboard": "สเก็ตบอร์ด",
-            "surfboard": "กระดานโต้คลื่น",
-            "tennis racket": "ไม้เทนนิส",
-            "bottle": "ขวด",
-            "wine glass": "แก้วไวน์",
-            "cup": "แก้วน้ำ",
-            "fork": "ส้อม",
-            "knife": "มีด",
-            "spoon": "ช้อน",
-            "bowl": "ชาม",
-            "banana": "กล้วย",
-            "apple": "แอปเปิล",
-            "sandwich": "แซนด์วิช",
-            "orange": "ส้ม",
-            "broccoli": "บร็อคโคลี",
-            "carrot": "แครอท",
-            "hot dog": "ฮอตดอก",
-            "pizza": "พิซซ่า",
-            "donut": "โดนัท",
-            "cake": "เค้ก",
-            "chair": "เก้าอี้",
-            "couch": "โซฟา",
-            "potted plant": "ต้นไม้กระถาง",
-            "bed": "เตียง",
-            "dining table": "โต๊ะอาหาร",
-            "toilet": "โถส้วม",
-            "tv": "โทรทัศน์",
-            "laptop": "คอมพิวเตอร์พกพา",
-            "mouse": "เมาส์",
-            "remote": "รีโมท",
-            "keyboard": "แป้นพิมพ์",
-            "cell phone": "โทรศัพท์มือถือ",
-            "microwave": "ไมโครเวฟ",
-            "oven": "เตาอบ",
-            "toaster": "เครื่องปิ้งขนมปัง",
-            "sink": "อ่างล้างมือ",
-            "refrigerator": "ตู้เย็น",
-            "book": "หนังสือ",
-            "clock": "นาฬิกา",
-            "vase": "แจกัน",
-            "scissors": "กรรไกร",
-            "teddy bear": "ตุ๊กตาหมี",
-            "hair drier": "ไดร์เป่าผม",
-            "toothbrush": "แปรงสีฟัน"
-        }
-        return eng_to_thai.get(word.lower(), word)
+
     def is_object_in_center(self, xmin, xmax, ymin, ymax,label, screen_width=1280, screen_height=720, margin=100):
 
         #center of the screen
@@ -143,6 +62,7 @@ class user_app_callback_class(app_callback_class):
             return False
 
 
+#Text to speech with threading
 def safe_speak(sp, text):
     threading.Thread(target=sp.speak, args=(text,), daemon=True).start()
 
@@ -150,10 +70,12 @@ def safe_speak(sp, text):
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 
-safe_speak(user_app_callback_class().sp,"เริ่มต้นการทำงาน")
+
 # This is the callback function that will be called when data is available from the pipeline
 def app_callback(pad, info, user_data):
+
     start = time.time()  # Start time for performance measurement
+
     # Get the GstBuffer from the probe info
     buffer = info.get_buffer()
     # Check if the buffer is valid
@@ -161,7 +83,7 @@ def app_callback(pad, info, user_data):
         return Gst.PadProbeReturn.OK
 
 
-    # Using the user_data to count the number of frames
+    # Count the number of frames (hailo_rpi_common -> gstreamer_app.py)
     user_data.increment()
 
 
@@ -169,6 +91,7 @@ def app_callback(pad, info, user_data):
     format, width, height = get_caps_from_pad(pad)
 
 
+    # ----- Not using ------
     # If the user_data.use_frame is set to True, we can get the video frame from the buffer
     user_data.use_frame = False  # Set this to True to use the frame
     frame = None
@@ -176,17 +99,17 @@ def app_callback(pad, info, user_data):
         # Get video frame
         frame = get_numpy_from_buffer(buffer, format, width, height)
 
-    # Get the detections from the buffer
+
+    # Decode the detections from the buffer
     roi = hailo.get_roi_from_buffer(buffer)
     detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
 
     # Parse the detections
-    detection_count = 0 
-    seen_label = set()
-    obj_this_frame: dict[str, int] = {}  # Tracks the object in each frame
+    seen_label = set() #reset every frame
 
-    # Go through each detection in the buffer
+    # Go through each detection in the buffer/frame
     for detection in detections:
+
         # get info of each detection
         label = detection.get_label()
         bbox = detection.get_bbox()
@@ -198,14 +121,16 @@ def app_callback(pad, info, user_data):
         ymin = float(bbox.ymin())
         ymax = float(bbox.ymax())
 
+
         #Only count if object is in the center of the screen
         if user_data.is_object_in_center(xmin, xmax, ymin, ymax, label):
-
-
             seen_label.add(label)  # Add label to the "set" of seen labels
-            # increment the detection count of each object label
-            if label not in user_data.object_save: #add new object to object_save: dict[label: couut]
+
+
+            # --- increment the detection count of each object label ---
+            if label not in user_data.object_save: # add new object to object_save: dict[label: couut]
                 user_data.object_save[label] = 1
+
             elif label in user_data.object_save and user_data.object_save[label] < 20: #increase seen cout to existing object
                 if user_data.object_status.get(label, False) is False: # for new object.
                     if confidence > 0.6:  # harder for unverified object aka (status = False)
@@ -216,14 +141,15 @@ def app_callback(pad, info, user_data):
                     user_data.object_save[label] += 1
 
 
-            # Speak the new verified object
+            # ----Speak the new verified object-----
             if user_data.object_save[label] >= 5 and user_data.object_status.get(label, False) is False:
                 user_data.object_status[label] = True  # Mark the object as active
-                print('Object detected:', label)
-                safe_speak(user_data.sp, f" {user_data.get_english_to_thai_dict(label)}")
+                print('Object detected:', label) 
+                safe_speak(user_data.sp, f" {Name_Eng_to_thai.get_english_to_thai_dict(label)}")
+       
         
 
-    # Delete activate object that is not detect
+    # ---- DELETE activated object that is not detect ----
     active_objects = [label for label, status in user_data.object_status.items() if status]
     for label in active_objects:
 
@@ -237,21 +163,29 @@ def app_callback(pad, info, user_data):
                 user_data.object_status[label] = False
 
                 print('Object not detected:', label)
-                #safe_speak(user_data.sp, f"ไม่เห็น {user_data.get_english_to_thai_dict(label)}")
+                #safe_speak(user_data.sp, f"ไม่เห็น {Name_Eng_to_thai.get_english_to_thai_dict(label)}")
     
 
-    #### Print the object status
-    if user_data.get_count() % 100 == 0:
+    #### Print the FPS status
+    if user_data.get_count() % 100 == 0: #every 100 frames
         print(f"frame{user_data.get_count()}, fps: {1/(time.time()-start):.2f}")
     
 
     return Gst.PadProbeReturn.OK
 
-if __name__ == "__main__":
-    # Create an instance of the user app callback class
 
+
+def run_yolo(app_callback, user_data):
+    safe_speak(user_data.sp, "เริ่มต้นการทำงาน") #speak
+
+    app = GStreamerDetectionApp(app_callback, user_data) 
+    user_data.app = app # let user_data access the GStreamerDetectionApp (gstreamer_app.py)
+    app.run()
+
+if __name__ == "__main__":
     user_data = user_app_callback_class()
-    app = GStreamerDetectionApp(app_callback, user_data)
+    safe_speak(user_data.sp, "เริ่มต้นการทำงาน") #speak
+    app = GStreamerDetectionApp(app_callback, user_data) 
     app.run()
 
 
